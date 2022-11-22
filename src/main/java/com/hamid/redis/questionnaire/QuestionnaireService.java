@@ -7,10 +7,15 @@ import java.util.List;
 import javax.transaction.Transactional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
+@CacheConfig(cacheNames = {"QuestionnaireDTO"})
 public class QuestionnaireService {
 
   private final Logger LOGGER = LogManager.getLogger(QuestionnaireService.class);
@@ -32,6 +37,7 @@ public class QuestionnaireService {
     return mapInstance(questionnaire, QuestionnaireDTO.class);
   }
 
+  @CachePut(key = "#questionnaireId")
   public QuestionnaireDTO updateQuestionnaire(
       Long questionnaireId, QuestionnaireDTO questionnaireDTO) {
     LOGGER.info("Updating a questionnaire with id of {}", questionnaireId);
@@ -53,6 +59,7 @@ public class QuestionnaireService {
     return questionnaireRepository.findQuestionnaireByCode(code).orElseThrow();
   }
 
+  @Cacheable(key = "#id")
   public QuestionnaireDTO getQuestionnaireById(Long id) {
     LOGGER.info("Getting a questionnaire with id of {}", id);
     Questionnaire questionnaire =
@@ -60,6 +67,16 @@ public class QuestionnaireService {
             .findById(id)
             .orElseThrow(() -> new QuestionnaireNotFoundException(id));
     return mapInstance(questionnaire, QuestionnaireDTO.class);
+  }
+
+  @CacheEvict(key = "#id")
+  public void deleteQuestionnaireById(Long id) {
+    LOGGER.info("Deleting a questionnaire with id of {}", id);
+    Questionnaire questionnaire =
+        questionnaireRepository
+            .findById(id)
+            .orElseThrow(() -> new QuestionnaireNotFoundException(id));
+    questionnaireRepository.delete(questionnaire);
   }
 
   public List<QuestionnaireDTO> getAllQuestionnaires() {
